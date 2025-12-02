@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Age + Zodiac + Birthplace Facts</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  </head>
+  <body>
+    <button id="darkToggle">☾</button>
+
+    <div class="container">
+      <h1>Age + Zodiac + Birthplace Facts</h1>
+
+      <label>Date of Birth:</label>
+      <input type="date" id="dob" />
+
+      <label>City of Birth:</label>
+      <div class="autocomplete-container">
+        <input type="text" id="city" autocomplete="off" />
+        <div id="autocomplete-list"></div>
+      </div>
+
+      <button onclick="calculate()">Generate</button>
+
+      <div id="result"></div>
+      <div id="map"></div>
+    </div>
+
+    <script src="app.js"></script>
+
+    <script>
+      const toggle = document.getElementById("darkToggle");
+      toggle.onclick = () => {
+        document.body.classList.toggle("dark");
+        const isDark = document.body.classList.contains("dark");
+        toggle.textContent = isDark ? "☀️" : "☾";
+        toggle.title = isDark ? "Light Mode" : "Dark Mode";
+        localStorage.setItem("darkMode", isDark);
+      };
+      if (localStorage.getItem("darkMode") === "true") {
+        document.body.classList.add("dark");
+        toggle.textContent = "☀️";
+        toggle.title = "Light Mode";
+      }
+    </script>
+  </body>
+</html>
