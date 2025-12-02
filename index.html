@@ -2,19 +2,32 @@
 <html>
   <head>
     <title>Age + Zodiac + Birthplace Facts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css" />
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   </head>
+
   <body>
     <button id="darkToggle">☾</button>
 
+    <div id="zodiac-header">
+      <span id="zodiac-icon">✧</span>
+    </div>
+
     <div class="container">
-      <h1>Age + Zodiac + Birthplace Facts</h1>
+      <h1>Age, Zodiac, and Birthplace Facts</h1>
+      <h5 style="text-align: center">
+        Learn more about your age, zodiac sign, and a unique birthplace fact!
+      </h5>
 
       <label>Date of Birth:</label>
       <input type="date" id="dob" />
@@ -28,6 +41,11 @@
       <button onclick="calculate()">Generate</button>
 
       <div id="result"></div>
+
+      <button id="shareBtn" style="display: none" onclick="shareResults()">
+        Share / Download Results
+      </button>
+
       <div id="map"></div>
     </div>
 
@@ -42,6 +60,7 @@
         toggle.title = isDark ? "Light Mode" : "Dark Mode";
         localStorage.setItem("darkMode", isDark);
       };
+
       if (localStorage.getItem("darkMode") === "true") {
         document.body.classList.add("dark");
         toggle.textContent = "☀️";

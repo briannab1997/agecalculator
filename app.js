@@ -8,34 +8,84 @@ if (localStorage.getItem("darkMode") === "true") {
   document.body.classList.add("dark");
 }
 
+let autocompleteOpen = false;
+
 document.getElementById("city").addEventListener("input", async function () {
   const q = this.value.trim();
   const list = document.getElementById("autocomplete-list");
   list.innerHTML = "";
   if (q.length < 2) {
     list.style.display = "none";
+    autocompleteOpen = false;
     return;
   }
+
   const url =
-    "https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=" +
+    "https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=" +
     encodeURIComponent(q);
   const res = await fetch(url);
-  const data = await res.json();
+  let data = await res.json();
+
+  const unique = new Map();
+  data.forEach((p) => {
+    const city =
+      p.address.city ||
+      p.address.town ||
+      p.address.village ||
+      p.address.hamlet ||
+      "";
+    const state = p.address.state || "";
+    const key = city + "|" + state;
+    if (city && !unique.has(key)) {
+      unique.set(key, p);
+    }
+  });
+
+  data = [...unique.values()];
+
   if (!data.length) {
     list.style.display = "none";
+    autocompleteOpen = false;
     return;
   }
+
   list.style.display = "block";
-  data.forEach((place) => {
+  autocompleteOpen = true;
+
+  data.slice(0, 5).forEach((place) => {
     const item = document.createElement("div");
     item.classList.add("autocomplete-item");
-    item.textContent = place.display_name;
+    item.textContent =
+      (place.address.city ||
+        place.address.town ||
+        place.address.village ||
+        place.address.hamlet) +
+      ", " +
+      (place.address.state || "") +
+      ", " +
+      place.address.country;
+
     item.onclick = () => {
-      document.getElementById("city").value = place.display_name;
+      document.getElementById("city").value = item.textContent;
       list.style.display = "none";
+      list.style.opacity = "1";
+      list.style.pointerEvents = "auto";
+      autocompleteOpen = false;
+      document.getElementById("city").blur();
     };
     list.appendChild(item);
   });
+});
+
+document.addEventListener("click", function (e) {
+  if (
+    !e.target.closest("#autocomplete-list") &&
+    !e.target.closest("#city") &&
+    autocompleteOpen
+  ) {
+    document.getElementById("autocomplete-list").style.display = "none";
+    autocompleteOpen = false;
+  }
 });
 
 async function calculate() {
@@ -52,14 +102,13 @@ async function calculate() {
   const place = await lookupPlace(cityInput);
   if (!place) {
     document.getElementById("result").innerHTML =
-      "<p>City not found. Please select from autocomplete.</p>";
+      "<p>City not found. Please select a suggestion.</p>";
     return;
   }
 
   const { display, lat, lon, country, city } = place;
 
   const population = await getPopulation(city, country);
-  const coords = { lat, lon };
   const wikiTitle = await getWikiTitleByCoords(lat, lon);
   const fact = await fetchWikiFact(wikiTitle);
   const photo = await fetchCityPhoto(wikiTitle);
@@ -78,6 +127,8 @@ async function calculate() {
     <p><strong>Fact:</strong> ${fact}</p>
     ${photo ? `<img src="${photo}" class="city-photo" />` : ""}
   `;
+
+  document.getElementById("shareBtn").style.display = "block";
 
   showMap(lat, lon, display);
 }
@@ -103,11 +154,12 @@ function zodiacSign(day, month) {
 
 async function lookupPlace(q) {
   const url =
-    "https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=" +
+    "https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=" +
     encodeURIComponent(q);
   const res = await fetch(url);
   const d = await res.json();
   if (!d.length) return null;
+
   const p = d[0];
   return {
     display: p.display_name,
@@ -189,4 +241,38 @@ function showMap(lat, lon, label) {
     maxZoom: 19,
   }).addTo(map);
   L.marker([lat, lon]).addTo(map).bindPopup(label).openPopup();
+}
+
+async function shareResults() {
+  const container = document.querySelector(".container");
+  const result = document.getElementById("result");
+  const mapBox = document.getElementById("map");
+
+  const wasDark = document.body.classList.contains("dark");
+  const originalBG = container.style.background;
+  const originalColor = container.style.color;
+
+  document.body.classList.remove("dark");
+
+  container.style.background = "white";
+  container.style.color = "black";
+  result.style.opacity = "1";
+  mapBox.style.opacity = "1";
+
+  await new Promise((resolve) => setTimeout(resolve, 150));
+
+  html2canvas(container, {
+    useCORS: true,
+    backgroundColor: "white",
+    scale: 2,
+  }).then((canvas) => {
+    const link = document.createElement("a");
+    link.download = "zodiac_results.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  });
+
+  if (wasDark) document.body.classList.add("dark");
+  container.style.background = originalBG;
+  container.style.color = originalColor;
 }
